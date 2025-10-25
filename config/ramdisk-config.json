@@ -1,0 +1,38 @@
+{
+  "ramdiskSize": "32G",
+  "ramdiskDrive": "R:",
+  "backupPath": "D:\\ramdisk_backup",
+  "syncInterval": 10,
+  "keepBackupCopies": 3,
+  "fileSystem": "NTFS",
+  "labels": {
+    "volumeLabel": "UFast"
+  },
+  "sync": {
+    "excludeDirs": [
+      "__pycache__",
+      ".pytest_cache",
+      ".mypy_cache",
+      "node_modules"
+    ],
+    "excludeFiles": [
+      "*.tmp",
+      "*.temp",
+      "~*",
+      "*.lock"
+    ],
+    "robocopyOptions": "/MIR /R:2 /W:5 /MT:16 /NDL /NFL /NP"
+  },
+  "logging": {
+    "enabled": true,
+    "logPath": "D:\\ramdisk_backup\\logs",
+    "maxLogSizeMB": 10,
+    "keepLogDays": 30
+  },
+  "performance": {
+    "useAWE": false,
+    "enableCompression": false,
+    "enableSparseFiles": false,
+    "allocationUnit": 65536
+  }
+}

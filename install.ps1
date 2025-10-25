@@ -204,13 +204,14 @@ foreach ($task in $taskFiles) {
     }
     
     try {
-        # Read the XML content
+        # Read the XML content (UTF-16LE encoding is required for Windows Task Scheduler XML files)
         $xmlContent = Get-Content $taskXmlPath -Raw -Encoding Unicode
         
         # Build the actual script path based on current installation location
         $actualScriptPath = Join-Path $scriptPath "scripts\$($task.Script)"
         
         # Replace any hardcoded path with the actual installation path
+        # Note: Uses Windows-style backslashes as Task Scheduler XML files always contain Windows paths
         # This regex matches the -File argument followed by any path ending with the script name
         $pattern = '(-File\s+")[^"]*\\scripts\\' + [regex]::Escape($task.Script) + '"'
         $replacement = "`$1$actualScriptPath`""

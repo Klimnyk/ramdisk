@@ -190,9 +190,9 @@ foreach ($taskName in $taskNames) {
 Write-Step "Registering tasks in Task Scheduler..."
 
 $taskFiles = @(
-    @{Name = "RamDisk-Startup"; File = "RamDisk-Startup.xml"; Description = "Auto-start on Windows startup"},
-    @{Name = "RamDisk-Shutdown"; File = "RamDisk-Shutdown.xml"; Description = "Save on shutdown"},
-    @{Name = "RamDisk-Sync"; File = "RamDisk-Sync.xml"; Description = "Periodic sync"}
+    @{Name = "RamDisk-Startup"; File = "RamDisk-Startup.xml"; Description = "Auto-start on Windows startup"; Script = "mount-ramdisk.ps1"},
+    @{Name = "RamDisk-Shutdown"; File = "RamDisk-Shutdown.xml"; Description = "Save on shutdown"; Script = "sync-ramdisk.ps1"},
+    @{Name = "RamDisk-Sync"; File = "RamDisk-Sync.xml"; Description = "Periodic sync"; Script = "sync-ramdisk.ps1"}
 )
 
 foreach ($task in $taskFiles) {
@@ -204,7 +204,20 @@ foreach ($task in $taskFiles) {
     }
     
     try {
-        Register-ScheduledTask -Xml (Get-Content $taskXmlPath | Out-String) -TaskName $task.Name -Force | Out-Null
+        # Read the XML content
+        $xmlContent = Get-Content $taskXmlPath -Raw -Encoding Unicode
+        
+        # Build the actual script path based on current installation location
+        $actualScriptPath = Join-Path $scriptPath "scripts\$($task.Script)"
+        
+        # Replace any hardcoded path with the actual installation path
+        # This regex matches the -File argument followed by any path ending with the script name
+        $pattern = '(-File\s+")[^"]*\\scripts\\' + [regex]::Escape($task.Script) + '"'
+        $replacement = "`$1$actualScriptPath`""
+        $xmlContent = $xmlContent -replace $pattern, $replacement
+        
+        # Register the task with the modified XML
+        Register-ScheduledTask -Xml $xmlContent -TaskName $task.Name -Force | Out-Null
         Write-Success "$($task.Name) - $($task.Description)"
     } catch {
         Write-ErrorMsg "Error registering $($task.Name): $($_.Exception.Message)"

@@ -204,7 +204,11 @@ foreach ($task in $taskFiles) {
     }
     
     try {
-        Register-ScheduledTask -Xml (Get-Content $taskXmlPath | Out-String) -TaskName $task.Name -Force | Out-Null
+        # Read XML content and replace placeholder path with actual installation path
+        $xmlContent = Get-Content $taskXmlPath -Raw
+        $xmlContent = $xmlContent -replace '%INSTALL_PATH%', $scriptPath
+        
+        Register-ScheduledTask -Xml $xmlContent -TaskName $task.Name -Force | Out-Null
         Write-Success "$($task.Name) - $($task.Description)"
     } catch {
         Write-ErrorMsg "Error registering $($task.Name): $($_.Exception.Message)"

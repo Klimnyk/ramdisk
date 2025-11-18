@@ -1,9 +1,10 @@
 {
-  "ramdiskSize": "32G",
+  "ramdiskSize": "64G",
   "ramdiskDrive": "R:",
-  "backupPath": "D:\\ramdisk_backup",
+  "backupPath": "F:\\ramdisk_backup",
   "syncInterval": 10,
   "keepBackupCopies": 3,
+  "createBackupEveryNSyncs": 6,
   "fileSystem": "NTFS",
   "labels": {
     "volumeLabel": "UFast"
@@ -25,7 +26,7 @@
   },
   "logging": {
     "enabled": true,
-    "logPath": "D:\\ramdisk_backup\\logs",
+    "logPath": "F:\\ramdisk_backup\\logs",
     "maxLogSizeMB": 10,
     "keepLogDays": 30
   },

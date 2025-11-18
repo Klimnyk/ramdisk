@@ -161,17 +161,26 @@ Edit `config\ramdisk-config.json` to change parameters:
   "ramdiskDrive": "R:",           # Drive letter
   "backupPath": "D:\\ramdisk_backup",  # Backup path
   "syncInterval": 10,             # Sync interval (minutes)
-  "keepBackupCopies": 3,          # Number of backup copies
+  "keepBackupCopies": 3,          # Number of backup copies to keep
+  "createBackupEveryNSyncs": 6,   # Create full backup every N syncs (0 = only on shutdown)
   "fileSystem": "NTFS"            # File system
 }
 ```
 
+**Backup Strategy:**
+- `keepBackupCopies`: Number of full backup copies to retain
+- `createBackupEveryNSyncs`: Auto-create backup after N syncs (e.g., 6 syncs × 10 min = every hour)
+  - Set to `0` to create backups only on shutdown/unmount
+  - Set to `6` to create backup every 6 syncs (every 60 minutes if syncInterval=10)
+- Old backups are automatically cleaned up on every sync
+
 ## 🛡️ Security and Reliability
 
 ### Backup Mechanism
-- **Main copy**: G:\ramdisk_backup\current
-- **Backup copies**: G:\ramdisk_backup\backup_YYYYMMDD_HHMMSS (last 3)
+- **Main copy**: G:\ramdisk_backup\current (continuously synced)
+- **Backup copies**: G:\ramdisk_backup\backup_YYYYMMDD_HHMMSS (last N copies)
 - **Sync logs**: G:\ramdisk_backup\logs
+- **Auto-cleanup**: Old backups removed automatically based on `keepBackupCopies`
 
 ### Recovery After Failure
 ```powershell

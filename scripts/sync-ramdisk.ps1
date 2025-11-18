@@ -18,12 +18,14 @@ $ramDiskDrive = $config.ramdiskDrive.TrimEnd(':')
 $backupPath = $config.backupPath
 $logPath = $config.logging.logPath
 $keepBackupCopies = $config.keepBackupCopies
+$createBackupEveryNSyncs = if ($config.createBackupEveryNSyncs) { $config.createBackupEveryNSyncs } else { 0 }
 
 if (-not (Test-Path $logPath)) {
     New-Item -ItemType Directory -Path $logPath -Force | Out-Null
 }
 
 $logFile = Join-Path $logPath "sync_$(Get-Date -Format 'yyyyMMdd').log"
+$syncCounterFile = Join-Path $backupPath ".sync_counter"
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -44,7 +46,7 @@ function Write-Log {
 function Test-RamDiskExists {
     param([string]$DriveLetter)
     $drives = Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue
-    return ($drives | Where-Object { $_.Name -eq $DriveLetter }) -ne $null
+    return $null -ne ($drives | Where-Object { $_.Name -eq $DriveLetter })
 }
 
 function Get-DirectorySize {
@@ -79,7 +81,25 @@ if (-not (Test-Path $targetDir)) {
     Write-Log "Created backup directory: $targetDir" "INFO"
 }
 
-if ($CreateBackup -or $Final) {
+# Check if we should auto-create backup based on sync counter
+$shouldAutoBackup = $false
+if ($createBackupEveryNSyncs -gt 0 -and -not $CreateBackup -and -not $Final) {
+    $syncCounter = 0
+    if (Test-Path $syncCounterFile) {
+        $syncCounter = [int](Get-Content $syncCounterFile -ErrorAction SilentlyContinue)
+    }
+    $syncCounter++
+    
+    if ($syncCounter -ge $createBackupEveryNSyncs) {
+        $shouldAutoBackup = $true
+        $syncCounter = 0
+        Write-Log "Auto-backup triggered after $createBackupEveryNSyncs syncs" "INFO"
+    }
+    
+    Set-Content -Path $syncCounterFile -Value $syncCounter -ErrorAction SilentlyContinue
+}
+
+if ($CreateBackup -or $Final -or $shouldAutoBackup) {
     $backupDir = Join-Path $backupPath "backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
     
     if (Test-Path $targetDir) {
@@ -91,22 +111,29 @@ if ($CreateBackup -or $Final) {
         } catch {
             Write-Log "Failed to create backup copy: $($_.Exception.Message)" "WARN"
         }
+    }
+}
+
+# Clean up old backups (always, not just when creating new ones)
+try {
+    $backups = Get-ChildItem $backupPath -Filter "backup_*" -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending
+    
+    if ($backups.Count -gt $keepBackupCopies) {
+        $toDelete = $backups | Select-Object -Skip $keepBackupCopies
         
-        $backups = Get-ChildItem $backupPath -Filter "backup_*" -Directory | Sort-Object Name -Descending
+        Write-Log "Found $($backups.Count) backups, keeping latest $keepBackupCopies" "INFO"
         
-        if ($backups.Count -gt $keepBackupCopies) {
-            $toDelete = $backups | Select-Object -Skip $keepBackupCopies
-            
-            foreach ($old in $toDelete) {
-                try {
-                    Remove-Item $old.FullName -Recurse -Force -ErrorAction Stop
-                    Write-Log "Removed old backup: $($old.Name)" "INFO"
-                } catch {
-                    Write-Log "Failed to remove old backup $($old.Name): $($_.Exception.Message)" "WARN"
-                }
+        foreach ($old in $toDelete) {
+            try {
+                Remove-Item $old.FullName -Recurse -Force -ErrorAction Stop
+                Write-Log "Removed old backup: $($old.Name)" "INFO"
+            } catch {
+                Write-Log "Failed to remove old backup $($old.Name): $($_.Exception.Message)" "WARN"
             }
         }
     }
+} catch {
+    Write-Log "Error during backup cleanup: $($_.Exception.Message)" "WARN"
 }
 
 Write-Log "Source: $sourceDir" "INFO"
@@ -121,7 +148,7 @@ try {
     $robocopyArgs = @(
         $sourceDir,
         $targetDir,
-        "/E",
+        "/MIR",
         "/COPY:DAT",
         "/DCOPY:DAT",
         "/R:3",

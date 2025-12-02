@@ -1,0 +1,66 @@
+{
+  "ramdiskSize": "32G",
+  "ramdiskDrive": "R:",
+  "backupPath": "D:\\ramdisk_backup",
+  "syncInterval": 10,
+  "keepBackupCopies": 1,
+  "fileSystem": "NTFS",
+  "labels": {
+    "volumeLabel": "UFast"
+  },
+  "sync": {
+    "excludeDirs": [
+      "__pycache__",
+      ".pytest_cache",
+      ".mypy_cache",
+      "node_modules",
+      ".git",
+      ".venv",
+      "venv"
+    ],
+    "excludeFiles": [
+      "*.tmp",
+      "*.temp",
+      "~*",
+      "*.lock",
+      "*.log",
+      "Thumbs.db",
+      "desktop.ini"
+    ],
+    "robocopyOptions": "/MIR /R:2 /W:5 /MT:16 /NDL /NFL /NP"
+  },
+  "logging": {
+    "enabled": true,
+    "logPath": "D:\\ramdisk_backup\\logs",
+    "maxLogSizeMB": 10,
+    "keepLogDays": 30
+  },
+  "performance": {
+    "useAWE": false,
+    "enableCompression": false,
+    "enableSparseFiles": false,
+    "allocationUnit": 65536
+  },
+  "multiBackup": {
+    "enabled": true,
+    "parallelSync": true,
+    "destinations": [
+      {
+        "name": "Primary",
+        "path": "D:\\ramdisk_backup",
+        "enabled": true,
+        "priority": 1,
+        "keepBackupCopies": 1
+      },
+      {
+        "name": "Secondary",
+        "path": "E:\\ramdisk_backup",
+        "enabled": true,
+        "priority": 2,
+        "keepBackupCopies": 1
+      }
+    ],
+    "failoverOnError": true,
+    "syncTimeoutSeconds": 300
+  }
+}
